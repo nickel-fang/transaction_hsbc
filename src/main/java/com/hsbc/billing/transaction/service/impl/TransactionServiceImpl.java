@@ -46,14 +46,16 @@ public class TransactionServiceImpl implements TransactionService {
         final Transaction transaction = Transaction.fromDTO(transactionRequest);
         transaction.setId(idGenerator.nextId());
         final Transaction saved = repo.save(transaction);
+        log.info("Saved transaction: {}", transaction);
         return Transaction.toDTO(saved);
     }
 
-    // demo: two transaction requests with the same feature info in 1 minute will be considered as duplicated
+    // two transaction requests with the same feature info in 1 minute will be considered as duplicated
     private void duplicateTransactionCheck(TransactionRequest transactionRequest) {
         final Cache cache = cacheManager.getCache("duplicatedTransactions");
         final String found = cache.get(transactionRequest.getFeatureInfo(), String.class);
         if (!StringUtils.isEmpty(found)) {
+            log.warn("Duplicated transaction request: {}", transactionRequest.toSimpleString());
             throw new TransactionDuplicatedException(transactionRequest);
         }
         cache.put(transactionRequest.getFeatureInfo(), "EXIST");
@@ -63,11 +65,13 @@ public class TransactionServiceImpl implements TransactionService {
     @CachePut(value = "transactions", key = "#id")
     public TransactionResponse updateTransaction(Long id, TransactionRequest transactionRequest) {
         if (!repo.existsById(id)) {
+            log.warn("Transaction with id {} not found with transaction update request: {}", id, transactionRequest.toSimpleString());
             throw new TransactionNotFoundException(id);
         }
         final Transaction transaction = Transaction.fromDTO(transactionRequest);
         transaction.setId(id);
         repo.update(transaction);
+        log.info("Updated transaction: {}", transaction);
         return Transaction.toDTO(transaction);
     }
 
@@ -75,9 +79,11 @@ public class TransactionServiceImpl implements TransactionService {
     @CacheEvict(value = "transactions", key = "#id")
     public void deleteTransaction(Long id) {
         if (!repo.existsById(id)) {
+            log.warn("Transaction with id {} not found", id);
             throw new TransactionNotFoundException(id);
         }
         repo.delete(id);
+        log.info("Deleted transaction: {}", id);
     }
 
     @Override
@@ -85,6 +91,7 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionResponse getTransaction(Long id) {
         final Transaction transaction = repo.findById(id);
         if (transaction == null) {
+            log.warn("Transaction with id {} not found", id);
             throw new TransactionNotFoundException(id);
         }
         return Transaction.toDTO(transaction);

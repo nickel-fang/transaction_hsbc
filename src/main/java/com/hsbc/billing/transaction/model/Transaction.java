@@ -29,6 +29,25 @@ public class Transaction {
     private String ipAddress;
     private String deviceFingerprint;
 
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "id=" + id +
+                ", amount=" + amount +
+                ", currency='" + currency + '\'' +
+                ", type=" + type +
+                ", senderAccount='" + senderAccount + '\'' +
+                ", receiverAccount='" + receiverAccount + '\'' +
+                ", beneficiaryName='" + beneficiaryName + '\'' +
+                ", channel='" + channel + '\'' +
+                ", status=" + status +
+                ", description='" + description + '\'' +
+                ", transactionTime=" + transactionTime +
+                ", ipAddress='" + ipAddress + '\'' +
+                ", deviceFingerprint='" + deviceFingerprint + '\'' +
+                '}';
+    }
+
     public static Transaction fromDTO(TransactionRequest transactionRequest) {
         Transaction transaction = new Transaction();
         transaction.setAmount(transactionRequest.getAmount());
