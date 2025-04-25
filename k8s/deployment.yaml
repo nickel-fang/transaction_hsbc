@@ -17,6 +17,7 @@ spec:
       containers:
         - name: transaction-api
           image: hsbc/transaction-api
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           readinessProbe:
