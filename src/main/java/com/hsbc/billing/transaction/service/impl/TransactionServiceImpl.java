@@ -29,15 +29,18 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TransactionServiceImpl implements TransactionService {
 
-    @Autowired
     private SnowflakeIdGenerator idGenerator;
 
-    @Autowired
     private TransactionRepository repo;
 
-    @Autowired
-    @Qualifier("cache_duplicatedTransactions")
     private CacheManager cacheManager;
+
+    public TransactionServiceImpl(@Autowired SnowflakeIdGenerator idGenerator, @Autowired TransactionRepository repo,
+            @Autowired @Qualifier("cache_duplicatedTransactions") CacheManager cacheManager) {
+        this.idGenerator = idGenerator;
+        this.repo = repo;
+        this.cacheManager = cacheManager;
+    }
 
     @Override
     @CachePut(value = "transactions", key = "#result.id")

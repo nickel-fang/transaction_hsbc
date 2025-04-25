@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hsbc.billing.transaction.dto.TransactionRequest;
 import com.hsbc.billing.transaction.dto.TransactionResponse;
 import com.hsbc.billing.transaction.exception.TransactionDuplicatedException;
@@ -12,37 +13,24 @@ import com.hsbc.billing.transaction.model.TransactionStatus;
 import com.hsbc.billing.transaction.model.TransactionType;
 import com.hsbc.billing.transaction.repository.TransactionRepository;
 import com.hsbc.billing.transaction.service.impl.TransactionServiceImpl;
+import com.hsbc.billing.transaction.util.SnowflakeIdGenerator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Nickel Fang 2025/4/24
  */
-@SpringBootTest
 public class TransactionServiceImplTest {
 
-    @Autowired
     private TransactionService transactionService;
 
-    @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
-    @Qualifier("cache_duplicatedTransactions")
-    private CacheManager cacheManager_duplicated;
-
-    @Autowired
-    @Qualifier("cache_transactions")
-    private CacheManager cacheManager;
+    private CaffeineCacheManager cacheManager;
 
     private TransactionRequest transactionRequest;
 
@@ -60,9 +48,15 @@ public class TransactionServiceImplTest {
                 .deviceFingerprint("fingerprint")
                 .ipAddress("192.168.1.1")
                 .build();
-        transactionRepository.clear();
-        cacheManager_duplicated.getCache("duplicatedTransactions").clear();
-        cacheManager.getCache("transactions").clear();
+
+        cacheManager = new CaffeineCacheManager("duplicatedTransactions");
+        cacheManager.setCaffeine(Caffeine.newBuilder()
+                .expireAfterWrite(1, TimeUnit.MINUTES)
+                .initialCapacity(1000)
+                .maximumSize(100_000)
+                .recordStats());
+
+        transactionService = new TransactionServiceImpl(new SnowflakeIdGenerator(1l, 1l), new TransactionRepository(), cacheManager);
     }
 
     @Test
@@ -83,7 +77,7 @@ public class TransactionServiceImplTest {
     public void createTransaction_notDuplicated() throws Exception {
         transactionService.createTransaction(transactionRequest);
         // Thread.sleep(61000);
-        cacheManager_duplicated.getCache("duplicatedTransactions").clear();
+        cacheManager.getCache("duplicatedTransactions").clear();
         transactionService.createTransaction(transactionRequest);
     }
 
