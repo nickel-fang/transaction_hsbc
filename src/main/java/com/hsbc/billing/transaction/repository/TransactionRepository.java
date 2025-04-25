@@ -44,4 +44,8 @@ public class TransactionRepository {
     public boolean existsById(Long id) {
         return store.containsKey(id);
     }
+
+    public void clear() {
+        store.clear();
+    }
 }
