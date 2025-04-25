@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: transaction-api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+snowflake:
+  datacenter-id: ${ENV_DATACENTER_ID:1}
+  instance-id: ${ENV_INSTANCE_ID:1}
